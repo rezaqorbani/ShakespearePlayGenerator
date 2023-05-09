@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.utils.data import TensorDataset, DataLoader
 
 class RNN(nn.Module):
 
@@ -22,7 +23,25 @@ class RNN(nn.Module):
         output, hidden = self.rnn(input, hidden)
         output = self.linear(output)
         return output, hidden
+    
+    def train(self,dataloader,model):
+        n_epochs = 30
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        criterion = nn.MSELoss()
+        losses = []
+        for epoch in range(1, n_epochs + 1):
+            for i, (X_train, y_train) in enumerate(dataloader):
+                optimizer.zero_grad()
+                output, hidden = model(X_train, None)
+                loss = criterion(output, y_train)
+                loss.backward()
+                optimizer.step()
+                losses.append(loss.item())
 
+        return losses
+
+
+'''
 # Random testing
 input_size = 40
 hidden_size = 100
@@ -53,5 +72,6 @@ plt.title('Training loss evolution')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.show()
+'''
 
 
