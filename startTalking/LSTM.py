@@ -35,3 +35,25 @@ class LSTMModel(nn.Module):
 
         out = self.fc(out)
         return out, hidden
+
+    def init_hidden(self, batch_size):
+        weight = next(self.parameters()).data
+        hidden = (
+            weight.new(self.num_layers * self.num_directions, batch_size, self.hidden_size).zero_(),
+            weight.new(self.num_layers * self.num_directions, batch_size, self.hidden_size).zero_()
+        )
+        return hidden
+    
+    ## Save the trained model
+    def save_model(self, path):
+        """Save a PyTorch model to a specified path."""
+        torch.save(self.state_dict(), path)
+    
+    @classmethod
+    def load_model(cls, path):
+        """Load a PyTorch model from a specified path."""
+        model = cls()  # Initialize the model
+
+        model.load_state_dict(torch.load(path))
+        model.eval()  # Set in evaluation mode
+        return model
