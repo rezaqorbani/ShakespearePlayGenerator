@@ -16,13 +16,11 @@ class Evaluater:
         total_loss = 0
         total_count = 0
         hidden = self.model.init_hidden(dataloader.batch_size)
+        hidden = hidden.to(self.device)
 
         with torch.no_grad():
             for data, target in dataloader:
                 data, targets = data.to(self.device), target.to(self.device)
-
-                # Detach the hidden state from the computation graph to prevent backpropagation through time
-                hidden = tuple([state.detach() for state in hidden])
 
                 # Forward pass
                 outputs, hidden = self.model(data, hidden)
@@ -43,7 +41,8 @@ class Evaluater:
 
         # Initialize the hidden state
         hidden = self.model.init_hidden(1)
-
+        hidden = hidden.to(self.device)
+        
         # Generate text
         generated_text = seed_text
         for _ in range(gen_length):
