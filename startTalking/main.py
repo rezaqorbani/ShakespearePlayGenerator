@@ -15,7 +15,7 @@ num_epochs = 10
 learning_rate = 0.001
 
 # Load and preprocess data
-dataset_dir = '../data/'
+dataset_dir = '../data/Cornell_Movie-Dialogs_Corpus'
 data_processor = DataProcessor(dataset_dir)
 
 # Choose to preprocess data or load saved mappings
