@@ -161,3 +161,8 @@ cython_debug/
 
 # local stuff:
 DefaultProject3.pdf
+
+# saved models
+saved_models/
+saved/model/lstm2layers_10epochs
+saved/model/rnn_model

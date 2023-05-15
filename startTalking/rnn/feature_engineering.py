@@ -1,3 +1,6 @@
+# preprocess.py
+## Character-Level Mapping
+
 import os
 import csv
 import json
@@ -10,7 +13,7 @@ class DataProcessor:
 
     def read_dialogue_lines(self):
         dialogue_lines = {}
-        with open(os.path.join(self.dataset_dir, '../../data/Cornell_Movie-Dialog_Corpus/movie_lines.txt'), 'r', encoding='iso-8859-1') as f:
+        with open(os.path.join(self.dataset_dir, '../../data/Cornell_Movie-Dialog_Corpusmovie_lines.txt'), 'r', encoding='iso-8859-1') as f:
             for row in f:
                 line=row.strip().split(" +++$+++ ")
                 if len(line) == 5 and line[4]:
@@ -79,3 +82,9 @@ class DataProcessor:
       val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
       test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
       return train_loader, val_loader, test_loader
+
+
+
+
+
+
