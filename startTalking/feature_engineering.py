@@ -4,6 +4,8 @@
 import os
 import csv
 import json
+import torch
+from torch.utils.data import TensorDataset, DataLoader, random_split
 
 class DataProcessor:
     def __init__(self, dataset_dir):
@@ -54,3 +56,35 @@ class DataProcessor:
         with open(id_to_char_file, 'r') as f:
             id_to_char = json.load(f)
         return char_to_id, id_to_char
+    
+    def create_dataset(self, tokenized_text, seq_length=50):
+        input_sequences = []
+        target_sequences = []
+
+        # Create input-target pairs with the specified sequence length
+        for i in range(0, len(tokenized_text) - seq_length, 1):
+            input_seq = tokenized_text[i:i + seq_length]
+            target_seq = tokenized_text[i + 1:i + seq_length + 1]
+            input_sequences.append(input_seq)
+            target_sequences.append(target_seq)
+
+        dataset = TensorDataset(torch.tensor(input_sequences, dtype=torch.long),
+                                torch.tensor(target_sequences, dtype=torch.long))
+        #dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        return dataset
+    @staticmethod
+    def create_loaders(dataset, train_split, val_split, test_split, batch_size):
+      train_size = int(train_split * len(dataset))
+      val_size = int(val_split * len(dataset))
+      test_size = int(test_split * len(dataset))
+      train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
+      train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+      val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+      test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+      return train_loader, val_loader, test_loader
+
+
+
+
+
+
