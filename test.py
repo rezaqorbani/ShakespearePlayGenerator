@@ -14,14 +14,13 @@ class Evaluater:
         self.model.eval()  # Set the model in evaluation mode
         total_loss = 0
         total_count = 0
-        hidden = self.model.init_hidden(dataloader.batch_size)
 
         with torch.no_grad():
             for data, target in dataloader:
                 data, targets = data.to(self.device), target.to(self.device)
 
-                # Detach the hidden state from the computation graph to prevent
-                # backpropagation through time
+                # Initialize and detach the hidden state for each batch
+                hidden = self.model.init_hidden(data.size(0))
                 hidden = tuple([state.detach() for state in hidden])
 
                 # Forward pass
@@ -34,15 +33,15 @@ class Evaluater:
         perplexity = np.exp(avg_loss)
         return perplexity
 
-    def generate_text(self, seed_text, gen_length, char_to_id, id_to_char, device, temperature=1.0, top_p=1):
+    def generate_text(self, seed_text, gen_length, word_to_id, id_to_word, device, temperature=1.0, top_p=1):
         self.model.eval()
 
         # Convert seed_text to tensor
-        input_seq = [char_to_id[char] for char in seed_text]
+        input_seq = [word_to_id[word] if word in word_to_id else word_to_id['<UNK>'] for word in seed_text.split()]
         input_seq = torch.tensor(input_seq, dtype=torch.long).unsqueeze(0).to(device)  # Add batch_first dimension
 
         # Initialize the hidden state
-        hidden = self.model.init_hidden(1)
+        hidden = self.model.init_hidden(len(input_seq))
 
         # Generate text
         generated_text = seed_text
@@ -54,16 +53,16 @@ class Evaluater:
                 outputs = outputs[-1, :] / temperature
                 outputs = nucleus_sampling(outputs, top_p=top_p)
 
-                char_probs = F.softmax(outputs, dim=0)
+                word_probs = F.softmax(outputs, dim=0)
 
-                # Sample a character from the output probabilities
-                char_idx = torch.multinomial(char_probs, 1).item()
+                # Sample a word from the output probabilities
+                word_idx = torch.multinomial(word_probs, 1).item()
 
-                # Append the generated character to the generated text
-                generated_char = id_to_char[str(char_idx)]
-                generated_text += generated_char
+                # Append the generated word to the generated text
+                generated_word = id_to_word[str(word_idx)]
+                generated_text += ' ' + generated_word
 
-                # Update the input sequence with the generated character
-                input_seq = torch.tensor([[char_idx]], dtype=torch.long).to(device)
+                # Update the input sequence with the generated word
+                input_seq = torch.tensor([[word_idx]], dtype=torch.long).to(device)
 
         return generated_text
