@@ -7,7 +7,7 @@ import json
 import torch
 from torch.utils.data import TensorDataset, DataLoader, random_split
 
-class DataProcessor:
+class MovieDialogsLoader:
     def __init__(self, dataset_dir):
         self.dataset_dir = dataset_dir
 

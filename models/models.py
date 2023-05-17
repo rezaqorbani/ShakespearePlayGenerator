@@ -60,23 +60,24 @@ Hidden layers, number of hidden layer in each cell, the more is better, but also
 
 
 class LSTMModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, num_layers, dropout=0, bidirectional= False):
+    def __init__(self, input_size, hidden_size, output_size, num_layers, embedding_size, embedding_matrix, dropout=0, bidirectional=False):
         super(LSTMModel, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.num_directions = 2 if bidirectional else 1
 
-        
-        # Input Layer (for embedding)
-        self.embedding = nn.Embedding(output_size, input_size)  # output size is the vocabulary size, input size is the embedding size
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, dropout=dropout, batch_first=True, bidirectional=bidirectional)
-        self.fc = nn.Linear(hidden_size*self.num_directions, output_size)
+        # Initialize Embedding layer with pre-trained embeddings
+        self.embedding = nn.Embedding(output_size, embedding_size)
+        self.embedding.load_state_dict({'weight': embedding_matrix})
+        self.embedding.weight.requires_grad = False  # Set to True if you want the embeddings to be fine-tuned
+
+        self.lstm = nn.LSTM(embedding_size, hidden_size, num_layers, dropout=dropout, batch_first=True, bidirectional=bidirectional)
+        self.fc = nn.Linear(hidden_size * self.num_directions, output_size)
  
 
-            
     def forward(self, x, hidden):
         # Build Embeddings
-        x=self.embedding(x)
+        x = self.embedding(x)
         
         out, hidden = self.lstm(x, hidden) # hidden is (h_n, c_n)
         out = out.contiguous().view(-1, self.hidden_size * self.num_directions)

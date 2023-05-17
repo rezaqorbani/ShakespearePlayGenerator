@@ -12,12 +12,13 @@ class ModelTrainer:
 
     def train(self):
         self.model.train()
-        hidden = self.model.init_hidden(self.dataloader.batch_size)
         total_loss = 0
         total_batches = 0
         for inputs, labels in self.dataloader:
             inputs, labels = inputs.to(self.device), labels.to(self.device)
-            # Detach the hidden state from the computation graph to prevent backpropagation through time
+
+            # Initialize and detach the hidden state for each batch
+            hidden = self.model.init_hidden(inputs.size(0))
             hidden = tuple([state.detach() for state in hidden])
 
             # Forward pass
@@ -39,14 +40,13 @@ class ModelTrainer:
         self.model.eval()
         total_loss = 0
         total_batches = 0
-        # Initialize the hidden state
-        hidden = self.model.init_hidden(validation_loader.batch_size)
 
         with torch.no_grad():
             for inputs, labels in validation_loader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
 
-                # Detach the hidden state from the computation graph
+                # Initialize and detach the hidden state for each batch
+                hidden = self.model.init_hidden(inputs.size(0))
                 hidden = tuple([state.detach() for state in hidden])
 
                 # Forward pass
