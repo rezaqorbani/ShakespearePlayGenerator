@@ -67,7 +67,9 @@ class Evaluater:
                 generated_text += ' ' + generated_word
 
                 # Update the input sequence with the generated word
-                input_seq = torch.tensor([[word_idx]], dtype=torch.long).to(device)
+                input_seq_text = generated_text.split()[-len(input_seq):]
+                input_seq_ids = [word_idx[char] for char in input_seq_text]
+                input_seq = torch.tensor(input_seq_ids, dtype=torch.long).unsqueeze(0).to(device)
 
 
                 # word_idx = torch.multinomial(word_probs, 1).item()
