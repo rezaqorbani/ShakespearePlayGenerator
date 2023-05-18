@@ -69,7 +69,7 @@ class LSTMModel(nn.Module):
         # Initialize Embedding layer with pre-trained embeddings
         self.embedding = nn.Embedding(output_size, embedding_size)
         self.embedding.load_state_dict({'weight': embedding_matrix})
-        self.embedding.weight.requires_grad = False  # Set to True if you want the embeddings to be fine-tuned
+        self.embedding.weight.requires_grad = True  # Set to True if you want the embeddings to be fine-tuned
 
         self.lstm = nn.LSTM(embedding_size, hidden_size, num_layers, dropout=dropout, batch_first=True, bidirectional=bidirectional)
         self.fc = nn.Linear(hidden_size * self.num_directions, output_size)

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from tqdm import tqdm
 
 class ModelTrainer:
     def __init__(self, model, dataloader, criterion, optimizer, device):
@@ -14,7 +15,8 @@ class ModelTrainer:
         self.model.train()
         total_loss = 0
         total_batches = 0
-        for inputs, labels in self.dataloader:
+        # for inputs, labels in self.dataloader:
+        for inputs, labels in tqdm(self.dataloader):
             inputs, labels = inputs.to(self.device), labels.to(self.device)
 
             # Initialize and detach the hidden state for each batch

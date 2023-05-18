@@ -19,11 +19,11 @@ learning_rate = 0.001
 # Load and preprocess data
 dataset_dir = './data/Cornell_Movie-Dialog_Corpus/'
 data_loader = CornellMovieDialogsLoader(dataset_dir)  # set level to 'word'
-word2vec_model = data_loader.word2vec
+word2vec_model = data_loader.wv
 embedding_size = data_loader.embedding_dim
 
 text_word_ids, word_to_id, id_to_word, embedding_matrix, vocab_size = data_loader.preprocess()
-dataset = data_loader.create_dataset(text_word_ids[:1000])
+dataset = data_loader.create_dataset(text_word_ids[:10000])
 train_loader, val_loader, test_loader = data_loader.create_loaders(dataset, 0.8, 0.1, 0.1, 50)
 
 print("data loaded")
@@ -59,5 +59,5 @@ print('Perplexity:', perplexity)
 seed_text = "Start a discussion about coffee"
 gen_length = 2000
 
-generated_text = evaluater.generate_text(seed_text, gen_length, word_to_id, id_to_word, device, temperature=0.8, top_p=0.9)
+generated_text = evaluater.generate_text(seed_text, gen_length, word_to_id, id_to_word, device, temperature=1, top_p=0)
 print(generated_text)

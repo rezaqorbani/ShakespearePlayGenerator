@@ -166,3 +166,7 @@ DefaultProject3.pdf
 saved_models/
 saved/model/lstm2layers_10epochs
 saved/model/rnn_model
+models/models.py
+data/embeddings/word2vec.wordvectors.vectors.npy
+data/embeddings/word2vec.wordvectors
+data/embeddings/word2vec.model

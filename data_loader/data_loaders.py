@@ -2,19 +2,24 @@ import os
 import json
 import torch
 from torch.utils.data import TensorDataset, DataLoader, random_split
-from gensim.models import Word2Vec
+from gensim.models import Word2Vec, KeyedVectors
+import gensim.downloader as api
+from tqdm import tqdm
 
 class CornellMovieDialogsLoader:
     def __init__(self, dataset_dir, level='word'):
         self.dataset_dir = dataset_dir
-        self.word2vec_path = './data/embeddings/word2vec.model'
-        self.word2vec = Word2Vec.load(self.word2vec_path)
-        self.embedding_dim = self.word2vec.vector_size
+        self.word2vec_path = './data/embeddings/word2vec.wordvectors'
+        self.wv = KeyedVectors.load(self.word2vec_path, mmap='r')
+        # self.wv = api.load('word2vec-google-news-300')
+        # self.wv = KeyedVectors.load_word2vec_format('
+        self.embedding_dim = self.wv.vector_size
         self.level = level
         self.vocab_size = None
         self.mappings_dir = './data/mappings'
 
     def read_dialogue_lines(self):
+        print('Reading dialogue lines...')
         dialogue_lines = {}
         with open(os.path.join(self.dataset_dir, 'movie_lines.txt'), 'r', encoding='iso-8859-1') as f:
             for row in f:
@@ -25,6 +30,7 @@ class CornellMovieDialogsLoader:
         return dialogue_lines
     
     def build_word_vocab(self):
+        print('Building word vocabulary...')
         # check if the mapping folder is empty, then save the mappings, else load the mappings
         if not os.listdir('./data/mappings'):
             # Add special tokens
@@ -32,7 +38,7 @@ class CornellMovieDialogsLoader:
             self.id_to_word = {0: '<PAD>', 1: '<UNK>'}
 
             # Add words from word2vec model
-            for word in self.word2vec.wv.key_to_index:
+            for word in self.wv.key_to_index:
                 if word not in self.word_to_id:
                     idx = len(self.word_to_id)
                     self.word_to_id[word] = idx
@@ -53,10 +59,12 @@ class CornellMovieDialogsLoader:
         return ids
     
     def text_to_vectors(self, text):
-        vectors = [self.word2vec.wv[word] if word in self.word2vec.wv else self.word2vec.wv['<UNK>'] for word in text]
+        print('Converting text to vectors...')
+        vectors = [self.wv[word] if word in self.wv else self.wv['<UNK>'] for word in text]
         return vectors
 
     def preprocess(self):
+        print('Preprocessing data...')
         dialogue_lines = self.read_dialogue_lines()
 
         word_to_id, id_to_word = self.build_word_vocab()
@@ -65,31 +73,31 @@ class CornellMovieDialogsLoader:
         # Create embedding matrix
         embedding_matrix = torch.zeros((len(word_to_id), self.embedding_dim))
         for word, idx in word_to_id.items():
-            if word in self.word2vec.wv:
-                embedding_matrix[idx] = torch.tensor(self.word2vec.wv[word])
+            if word in self.wv:
+                embedding_matrix[idx] = torch.tensor(self.wv[word])
         
         
         return text_id, word_to_id, id_to_word, embedding_matrix, self.vocab_size
     
     def create_dataset(self, tokenized_text, seq_length=50):
+        print('Creating dataset...')
         input_sequences = []
         target_sequences = []
 
-        # Iterate over each sentence in tokenized_text
-        for sentence in tokenized_text:
-            # Create input-target pairs with the specified sequence length
-            for i in range(0, len(sentence) - seq_length, 1):
-                input_seq = sentence[i:i + seq_length]
-                target_seq = sentence[i + 1:i + seq_length + 1]
-                input_sequences.append(input_seq)
-                target_sequences.append(target_seq)
+        # Flatten the list of lists
+        flattened_text = [word for sentence in tokenized_text for word in sentence]
 
-        # Padding input sequences and target sequences
-        input_sequences = torch.nn.utils.rnn.pad_sequence([torch.tensor(seq) for seq in input_sequences], batch_first=True)
-        target_sequences = torch.nn.utils.rnn.pad_sequence([torch.tensor(seq) for seq in target_sequences], batch_first=True)
+        # Create input-target pairs with the specified sequence length
+        for i in tqdm(range(0, len(flattened_text) - seq_length, 1)):
+            input_seq = flattened_text[i:i + seq_length]
+            target_seq = flattened_text[i + 1:i + seq_length + 1]
+            input_sequences.append(input_seq)
+            target_sequences.append(target_seq)
 
-        dataset = TensorDataset(input_sequences, target_sequences)
+        dataset = TensorDataset(torch.tensor(input_sequences, dtype=torch.long),
+                                torch.tensor(target_sequences, dtype=torch.long))
         return dataset
+
 
     
     @staticmethod

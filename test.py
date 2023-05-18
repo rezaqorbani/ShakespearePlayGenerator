@@ -39,9 +39,11 @@ class Evaluater:
         # Convert seed_text to tensor
         input_seq = [word_to_id[word] if word in word_to_id else word_to_id['<UNK>'] for word in seed_text.split()]
         input_seq = torch.tensor(input_seq, dtype=torch.long).unsqueeze(0).to(device)  # Add batch_first dimension
+        # input_seq = input_seq.new([word_idx]).unsqueeze(0)
 
         # Initialize the hidden state
-        hidden = self.model.init_hidden(len(input_seq))
+        # hidden = self.model.init_hidden(len(input_seq))
+        hidden = self.model.init_hidden(1)
 
         # Generate text
         generated_text = seed_text
@@ -55,8 +57,10 @@ class Evaluater:
 
                 word_probs = F.softmax(outputs, dim=0)
 
-                # Sample a word from the output probabilities
+                # Sample a word from the output probability distribution if the word is not <UNK> otherwise sample again
                 word_idx = torch.multinomial(word_probs, 1).item()
+                while id_to_word[str(word_idx)] == '<UNK>':
+                    word_idx = torch.multinomial(word_probs, 1).item()
 
                 # Append the generated word to the generated text
                 generated_word = id_to_word[str(word_idx)]
@@ -64,5 +68,15 @@ class Evaluater:
 
                 # Update the input sequence with the generated word
                 input_seq = torch.tensor([[word_idx]], dtype=torch.long).to(device)
+
+
+                # word_idx = torch.multinomial(word_probs, 1).item()
+
+                # # Append the generated word to the generated text
+                # generated_word = id_to_word[str(word_idx)]
+                # generated_text += ' ' + generated_word
+
+                # # Update the input sequence with the generated word
+                # input_seq = torch.tensor([[word_idx]], dtype=torch.long).to(device)
 
         return generated_text
