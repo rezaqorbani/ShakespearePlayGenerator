@@ -10,7 +10,7 @@ Num layers - number of layers'''
 
 
 class RNNModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, num_layers, dropout=0, bidirectional= False):
+    def __init__(self, input_size, hidden_size, output_size, num_layers, embedding_size, embedding_matrix=None, dropout=0, bidirectional= False, level='char'):
         super(RNNModel, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -18,8 +18,12 @@ class RNNModel(nn.Module):
 
         
         # Input Layer (for embedding)
-        self.embedding = nn.Embedding(output_size, input_size)  # output size is the vocabulary size, input size is the embedding size
-        self.rnn = nn.RNN(input_size, hidden_size, num_layers, batch_first=True)
+        self.embedding = nn.Embedding(output_size, embedding_size)  # output size is the vocabulary size, input size is the embedding size
+        if level == 'word':
+          # Initialize Embedding layer with pre-trained embeddings
+          self.embedding.load_state_dict({'weight': embedding_matrix})
+          self.embedding.weight.requires_grad = True  # Set to True if you want the embeddings to be fine-tuned
+        self.rnn = nn.RNN(embedding_size, hidden_size, num_layers, dropout=dropout, batch_first=True, bidirectional=bidirectional)
         self.fc = nn.Linear(hidden_size*self.num_directions, output_size)
  
 
@@ -34,7 +38,10 @@ class RNNModel(nn.Module):
         return out, hidden
 
     def init_hidden(self, batch_size):
-        return torch.zeros(self.num_layers, batch_size, self.hidden_size)
+        weight = next(self.parameters()).data
+        hidden = weight.new(self.num_layers * self.num_directions, batch_size, self.hidden_size).zero_()
+        return hidden
+        #return torch.zeros(self.num_layers, batch_size, self.hidden_size)
     
     ## Save the trained model
     def save_model(self, path):
@@ -60,16 +67,17 @@ Hidden layers, number of hidden layer in each cell, the more is better, but also
 
 
 class LSTMModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, num_layers, embedding_size, embedding_matrix, dropout=0, bidirectional=False):
+    def __init__(self, input_size, hidden_size, output_size, num_layers, embedding_size, embedding_matrix=None, dropout=0, bidirectional=False, level='char'):
         super(LSTMModel, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.num_directions = 2 if bidirectional else 1
-
-        # Initialize Embedding layer with pre-trained embeddings
         self.embedding = nn.Embedding(output_size, embedding_size)
-        self.embedding.load_state_dict({'weight': embedding_matrix})
-        self.embedding.weight.requires_grad = True  # Set to True if you want the embeddings to be fine-tuned
+
+        if level == 'word':
+          # Initialize Embedding layer with pre-trained embeddings
+          self.embedding.load_state_dict({'weight': embedding_matrix})
+          self.embedding.weight.requires_grad = True  # Set to True if you want the embeddings to be fine-tuned
 
         self.lstm = nn.LSTM(embedding_size, hidden_size, num_layers, dropout=dropout, batch_first=True, bidirectional=bidirectional)
         self.fc = nn.Linear(hidden_size * self.num_directions, output_size)

@@ -4,25 +4,29 @@ import torch.optim as optim
 from tqdm import tqdm
 
 class ModelTrainer:
-    def __init__(self, model, dataloader, criterion, optimizer, device):
+    def __init__(self, model, dataloader, criterion, optimizer, device, number_states=2):
         self.model = model
         self.dataloader = dataloader
         self.criterion = criterion
         self.optimizer = optimizer
         self.device = device
+        self.number_states = number_states
 
     def train(self):
         self.model.train()
         total_loss = 0
         total_batches = 0
+        
         # for inputs, labels in self.dataloader:
         for inputs, labels in tqdm(self.dataloader):
             inputs, labels = inputs.to(self.device), labels.to(self.device)
 
             # Initialize and detach the hidden state for each batch
             hidden = self.model.init_hidden(inputs.size(0))
-            hidden = tuple([state.detach() for state in hidden])
-
+            if self.number_states==2:
+              hidden = tuple([state.detach() for state in hidden])
+            else:
+              hidden = hidden.detach()
             # Forward pass
             outputs, hidden = self.model(inputs, hidden)
             
@@ -49,7 +53,10 @@ class ModelTrainer:
 
                 # Initialize and detach the hidden state for each batch
                 hidden = self.model.init_hidden(inputs.size(0))
-                hidden = tuple([state.detach() for state in hidden])
+                if self.number_states==2:
+                  hidden = tuple([state.detach() for state in hidden])
+                else:
+                  hidden = hidden.detach()
 
                 # Forward pass
                 outputs, hidden = self.model(inputs, hidden)

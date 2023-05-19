@@ -36,7 +36,8 @@ class ShakespearePlaysLoader:
             self.id_to_word = {0: '<PAD>', 1: '<UNK>'}
 
             # Add words from word2vec model
-            for word in self.wv.key_to_index:
+            for word in tqdm(self.plays_data.split()):
+            #for word in self.wv.key_to_index:
                 if word not in self.word_to_id:
                     idx = len(self.word_to_id)
                     self.word_to_id[word] = idx
@@ -91,7 +92,7 @@ class ShakespearePlaysLoader:
                 embedding_matrix[idx] = torch.tensor(self.wv[word])
         
         
-        return text_id, word_to_id, id_to_word, embedding_matrix, self.vocab_size
+        return text_id, embedding_matrix, self.vocab_size
     
     def preprocess_char_level(self):
         print('Preprocessing data...')

@@ -170,3 +170,6 @@ models/models.py
 data/embeddings/word2vec.wordvectors.vectors.npy
 data/embeddings/word2vec.wordvectors
 data/embeddings/word2vec.model
+
+# embeddings
+data/embeddings/word2vec.wordvectors
