@@ -169,3 +169,5 @@ saved/model/rnn_model
 
 # embeddings
 data/embeddings/word2vec.wordvectors
+
+data/

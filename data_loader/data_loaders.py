@@ -98,7 +98,7 @@ class ShakespearePlaysLoader:
         print('Preprocessing data...')
         char_to_id, id_to_char = self.build_char_vocab()
         text_id = self.text_to_ids_char(self.plays_data, char_to_id)
-        return text_id, char_to_id, id_to_char, self.vocab_size
+        return text_id, self.vocab_size
     
     def create_dataset(self, tokenized_text, seq_length=50):
         print('Creating dataset...')
