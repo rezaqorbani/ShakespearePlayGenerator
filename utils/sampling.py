@@ -1,7 +1,6 @@
 import torch
 import torch.nn.functional as F
 
-##!!!!!! CHAGNE THIS CODE !!!!!!##
 def nucleus_sampling(logits, top_p=0.0, filter_value=-float('Inf')):
     assert logits.dim() == 1 
 

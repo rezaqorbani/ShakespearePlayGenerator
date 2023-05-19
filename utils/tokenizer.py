@@ -4,8 +4,7 @@ from tokenizers.models import BPE
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.trainers import BpeTrainer
 import sys
-sys.path.append('./')
-from data_loader.data_loaders import ShakespearePlaysLoader
+# from data_loader.data_loaders import ShakespearePlaysLoader
 
 class BPETokenizer:
     def __init__(self, vocab_size=30000, min_frequency=2):
@@ -36,21 +35,21 @@ class BPETokenizer:
 
 
 # thoroughtly test the tokenizer
-if __name__ == '__main__':
-    # load the data
-    shakes_file = './data/ShakespearePlays/shakespeare.txt'
-    loader = ShakespearePlaysLoader(shakes_file, level='word')
-    plays = loader.read_Plays()
-    word_to_id, id_to_word = loader.build_word_vocab()
-    vocab_size = len(word_to_id)
-    print("vocab size:", vocab_size)
+# if __name__ == '__main__':
+#     # load the data
+#     shakes_file = './data/ShakespearePlays/shakespeare.txt'
+#     loader = ShakespearePlaysLoader(shakes_file, level='word')
+#     plays = loader.read_Plays()
+#     word_to_id, id_to_word = loader.build_word_vocab()
+#     vocab_size = len(word_to_id)
+#     print("vocab size:", vocab_size)
 
-    tokenizer = BPETokenizer(vocab_size=vocab_size, min_frequency=0)
-    # tokenizer.train(shakes_file)
-    # tokenizer.save('./data/tokenizers/bpe_tokenizer.json')
-    tokenizer.load('./data/tokenizers/bpe_tokenizer.json')
-    # get the mapping for the file using the tokenizer
-    encoded = tokenizer.tokenizer.encode(plays)
-    print("vocab size:", len(encoded.tokens))
+#     tokenizer = BPETokenizer(vocab_size=vocab_size, min_frequency=0)
+#     # tokenizer.train(shakes_file)
+#     # tokenizer.save('./data/tokenizers/bpe_tokenizer.json')
+#     tokenizer.load('./data/tokenizers/bpe_tokenizer.json')
+#     # get the mapping for the file using the tokenizer
+#     encoded = tokenizer.tokenizer.encode(plays)
+#     print("vocab size:", len(encoded.tokens))
 
 

@@ -5,6 +5,7 @@ from torch.utils.data import TensorDataset, DataLoader, random_split
 from gensim.models import Word2Vec, KeyedVectors
 import gensim.downloader as api
 from tqdm import tqdm
+from utils.tokenizer import BPETokenizer
 
 class ShakespearePlaysLoader:
     def __init__(self, dataset_dir, level='word'):
@@ -19,6 +20,7 @@ class ShakespearePlaysLoader:
         self.vocab_size = None
         self.mappings_dir = './data/mappings'
         self.plays_data= self.read_Plays()
+        
 
     def read_Plays(self):
         print('Reading Shakespeare Plays...')
@@ -26,6 +28,7 @@ class ShakespearePlaysLoader:
             plays_data = f.read()  
                
         return plays_data
+    
     
     def build_word_vocab(self):
         print('Building word vocabulary...')
@@ -67,7 +70,25 @@ class ShakespearePlaysLoader:
             
         self.vocab_size = len(self.char_to_id)
         return self.char_to_id, self.id_to_char
-            
+    
+    def build_bpe_vocab(self):
+        print('Building BPE vocabulary...')
+        # check if the mapping folder is empty, then save the mappings, else load the mappings
+        self.tokenizer = BPETokenizer(vocab_size=30000, min_frequency=2)
+        if not os.listdir('./data/mappings/bpe'):
+            # Add special tokens
+            plays_path = './data/ShakespearePlays/shakespeare.txt'
+            self.tokenizer.train(plays_path)
+            self.tokenizer.save('./data/mappings/bpe/bpe_tokenizer.json')
+            self.vocab_size = self.tokenizer.vocab_size
+        else:
+            self.tokenizer.load('./data/mappings/bpe/bpe_tokenizer.json')
+            self.vocab_size = self.tokenizer.vocab_size
+        
+        self.token_to_id = self.tokenizer.tokenizer.get_vocab()
+        self.id_to_token = {v: k for k, v in self.token_to_id.items()}
+
+        return self.token_to_id, self.id_to_token      
         
 
     def text_to_ids_word(self, plays, word_to_id):
@@ -77,9 +98,12 @@ class ShakespearePlaysLoader:
     def text_to_ids_char(self, plays, char_to_id):
         ids = [char_to_id.get(char, char_to_id['<UNK>']) for char in plays]
         return ids
+    
+    def text_to_ids_bpe(self, plays, tokenizer):
+        ids = tokenizer.tokenizer.encode(plays).ids
+        return ids
 
     
-
     def preprocess_word_level(self):
         print('Preprocessing data...')
         word_to_id, id_to_word = self.build_word_vocab()
@@ -100,6 +124,12 @@ class ShakespearePlaysLoader:
         text_id = self.text_to_ids_char(self.plays_data, char_to_id)
         return text_id, self.vocab_size
     
+    def preprocess_bpe_level(self):
+        print('Preprocessing data...')
+        token_to_id, id_to_token = self.build_bpe_vocab()
+        text_id = self.text_to_ids_bpe(self.plays_data, self.tokenizer)
+        return text_id, self.vocab_size
+    
     def create_dataset(self, tokenized_text, seq_length=50):
         print('Creating dataset...')
         input_sequences = []
@@ -116,7 +146,6 @@ class ShakespearePlaysLoader:
                                 torch.tensor(target_sequences, dtype=torch.long))
         return dataset
 
-
     
     @staticmethod
     def create_loaders(dataset, train_split, val_split, batch_size):
@@ -129,18 +158,18 @@ class ShakespearePlaysLoader:
       test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
       return train_loader, val_loader, test_loader
     
-    def save_mappings(self, save_dir, _to_id, id_to_):
+    def save_mappings(self, save_dir, token_to_id, id_to_token):
         with open(os.path.join(save_dir, f'{self.level}_to_id.json'), 'w') as f:
-            json.dump(_to_id, f)
+            json.dump(token_to_id, f)
 
         with open(os.path.join(save_dir, f'id_to_{self.level}.json'), 'w') as f:
-            json.dump(id_to_, f)
+            json.dump(id_to_token, f)
     
     def load_mappings(self, load_dir):
         with open(os.path.join(load_dir, f'{self.level}_to_id.json'), 'r') as f:
-            _to_id = json.load(f)
+            token_to_id = json.load(f)
 
         with open(os.path.join(load_dir, f'id_to_{self.level}.json'), 'r') as f:
-            id_to_ = json.load(f)
+            id_to_token = json.load(f)
 
-        return _to_id, id_to_
+        return token_to_id, id_to_token
