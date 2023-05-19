@@ -121,7 +121,7 @@ if __name__ == '__main__':
     generated_text = evaluater.generate_text(seed_text, gen_length, word_to_id, id_to_word, level, device, temperature=1, top_p=0)
     print(generated_text)
 
-
+   
 
 # data_processor_char = ShakespearePlaysLoader(DATASET_DIR, level='char')
 

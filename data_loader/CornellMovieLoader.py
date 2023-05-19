@@ -24,12 +24,13 @@ class CornellMovieLoader:
 
     def read_lines(self):
         print('Reading Dialogue lines...')
-        dialogue_lines = {}
+        dialogue_lines = []
         with open(os.path.join(self.dataset_dir, './Dialog_Corpus/movie_lines.txt'), 'r', encoding='iso-8859-1') as f:
             for row in f:
                 line=row.strip().split(" +++$+++ ")
+                #print(line)
                 if len(line) == 5 and line[4]:
-                    dialogue_lines[line[0]] = line[4].strip()
+                    dialogue_lines.append(line[4])
                 
         return dialogue_lines
     
