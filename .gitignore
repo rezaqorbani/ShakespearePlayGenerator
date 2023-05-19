@@ -168,6 +168,5 @@ saved/model/lstm2layers_10epochs
 saved/model/rnn_model
 
 # embeddings
-data/embeddings/word2vec.wordvectors
+data/embeddings/
 
-data/

@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader, random_split
-from data_loader.data_loaders import ShakespearePlaysLoader
+from data_loader.ShakespearePlaysLoader import ShakespearePlaysLoader
+from data_loader.CornellMovieLoader import CornellMovieLoader
 from models.models import LSTMModel, RNNModel
 from trainers.trainer import ModelTrainer
 import torch.nn as nn
@@ -12,11 +13,11 @@ from test import Evaluater
 
 
 
-def train(dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2, learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, use_bpe=False, use_augmentation=False):
+def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2, learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, use_bpe=False, use_augmentation=False):
     assert train_split + val_split <= 0.9, "train_split + val_split must be between 0.1 and 0.9"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    data_loader = ShakespearePlaysLoader(dataset_dir, level=level)
+    data_loader = loader(dataset_dir, level=level)
     
     if level == 'word':
         word2vec_model = data_loader.wv
@@ -95,11 +96,12 @@ if __name__ == '__main__':
     num_epochs = 3
     learning_rate = 0.001
     dataset_length = -1
-    dataset_dir = './data/ShakespearePlays/'
+    dataset_dir = './data/CornellMovie'
+    loader = CornellMovieLoader
     level = 'word'
     model_name = 'RNN'
 
-    evaluater, word_to_id, id_to_word, test_loader, criterion, device = train(dataset_dir, level=level, 
+    evaluater, word_to_id, id_to_word, test_loader, criterion, device = train(loader, dataset_dir, level=level, 
                                                                             model_name=model_name,
                                                                             batch_size=batch_size, num_epochs=num_epochs,
                                                                             train_split=0.8, val_split=0.1, 
