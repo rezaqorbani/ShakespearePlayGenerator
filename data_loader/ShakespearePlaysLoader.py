@@ -85,14 +85,9 @@ class ShakespearePlaysLoader:
         print('Building BPE vocabulary...')
         # check if the mapping folder is empty, then save the mappings, else load the mappings
         self.tokenizer = BPETokenizer()
-        # if os.path.exists(f'./data/mappings/{self.level}/bpe_tokenizer.json'):
-        #     self.tokenizer.load('./data/mappings/bpe/bpe_tokenizer.json')
-        #     self.vocab_size = self.tokenizer.vocab_size
-        # else:
-        #     # Add special tokens
-        plays_path = './data/ShakespearePlays/shakespeare.txt'
+
+        plays_path = self.dataset_dir+"/Plays/shakespeare.txt"
         self.tokenizer.train(plays_path)
-        # self.tokenizer.save('./data/mappings/bpe/bpe_tokenizer.json')
         self.vocab_size = self.tokenizer.vocab_size
 
         self.token_to_id = self.tokenizer.tokenizer.get_vocab()

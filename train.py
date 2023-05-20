@@ -17,8 +17,8 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
     assert train_split + val_split <= 0.9, "train_split + val_split must be between 0.1 and 0.9"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
     data_loader = loader(dataset_dir, level=level)
+    last_epoch = 0
     
     print("loading data...")
     if level == 'word':
@@ -53,9 +53,9 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
     # Initialize the model
     model = None
     embedding_matrix = None
-    if os.path.exists(f'./saved/models/{model_name}_{level}_model.pt'):
+    if os.path.exists(f'./saved/models/{model_name}_{level}_{batch_size}_{learning_rate}_{hidden_size}_{embedding_size}_{num_layers}_model.pt'):
         print("loading model...")
-        checkpoint = torch.load(f'./saved/models/{model_name}_{level}_model.pt')
+        checkpoint = torch.load(f'./saved/models/{model_name}_{level}_{batch_size}_{learning_rate}_{hidden_size}_{embedding_size}_{num_layers}_model.pt')
         model = LSTMModel if model_name == 'LSTM' else RNNModel
         model = model(input_size, hidden_size, vocab_size, num_layers, embedding_size, embedding_matrix)
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -89,7 +89,7 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
     # Training loop
 
     SAVE_AFTER_EPOCHS = 1
-    SAVE_PATH = f'./saved/models/{model_name}_{level}_model.pt'
+    SAVE_PATH = f'./saved/models/{model_name}_{level}_{batch_size}_{learning_rate}_{hidden_size}_{embedding_size}_{num_layers}_model.pt'
     for epoch in range(last_epoch, num_epochs):
         print("starting epoch", epoch+1)
         loss = trainer.train()
@@ -128,13 +128,13 @@ if __name__ == '__main__':
     val_split = 0.1
     num_epochs = 3
     learning_rate = 0.001
-    dataset_length = -1
+    dataset_length = 100
     dataset_dir = './data/ShakespearePlays'
     loader = ShakespearePlaysLoader
-    level = 'word'
-    model_name = 'RNN'
+    level = 'bpe'
+    model_name = 'LSTM'
 
-    evaluater, token_to_id, id_to_token, test_loader, criterion, device = train(loader, dataset_dir, level=level, 
+    evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(loader, dataset_dir, level=level, 
                                                                             model_name=model_name,
                                                                             batch_size=batch_size, num_epochs=num_epochs,
                                                                             train_split=0.8, val_split=0.1, 
@@ -151,5 +151,5 @@ if __name__ == '__main__':
     seed_text = "Start a discussion about coffee"
     gen_length = 2000
 
-    generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0)
+    generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0, tokenizer=tokenizer)
     print(generated_text)
