@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 from utils.sampling import nucleus_sampling
+import re
 
 
 
@@ -99,5 +100,5 @@ class Evaluater:
 
                 input_seq_ids = [token_to_id[token] if token in token_to_id else token_to_id['<UNK>'] for token in input_seq_text]
                 input_seq = torch.tensor(input_seq_ids, dtype=torch.long).unsqueeze(0).to(device)
-
+        generated_text = re.sub(r'\s+([.,;!?:\'])', r'\1', generated_text)
         return generated_text

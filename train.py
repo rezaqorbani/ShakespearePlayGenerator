@@ -149,12 +149,12 @@ if __name__ == '__main__':
     batch_size = 50
     train_split = 0.8
     val_split = 0.1
-    num_epochs = 1000
+    num_epochs = 3
     learning_rate = 0.001
-    dataset_length = 100
+    dataset_length = 10000
     dataset_dir = './data/ShakespearePlays'
     loader = ShakespearePlaysLoader
-    level = 'word'
+    level = 'bpe'
     model_name = 'LSTM'
     early_stopping_patience = 3 # set zero to disable early stopping
     step_size = 1
@@ -170,7 +170,7 @@ if __name__ == '__main__':
                                                                             embedding_size=embedding_size, 
                                                                             num_layers=num_layers, input_size=input_size, 
                                                                             dataset_length=dataset_length, use_bpe=False, 
-                                                                            use_augmentation=True, 
+                                                                            use_augmentation=False, 
                                                                             early_stopping_patience=early_stopping_patience, 
                                                                             step_size=step_size, gamma=gamma,
                                                                             use_scheduler=use_scheduler)
