@@ -29,11 +29,13 @@ class ShakespearePlaysLoader:
                
         return plays_data
     
-    
     def build_word_vocab(self):
         print('Building word vocabulary...')
         # check if the mapping folder is empty, then save the mappings, else load the mappings
-        if not os.listdir('./data/mappings'):
+        # if not os.listdir('./data/mappings'):
+        if os.path.exists(self.mappings_dir + f'/{self.level}_to_id.json') and os.path.exists(self.mappings_dir + f'/id_to_{self.level}.json'):
+            self.word_to_id, self.id_to_word = self.load_mappings(self.mappings_dir)
+        else:
             # Add special tokens
             self.word_to_id = {'<PAD>': 0, '<UNK>': 1}
             self.id_to_word = {0: '<PAD>', 1: '<UNK>'}
@@ -48,8 +50,6 @@ class ShakespearePlaysLoader:
             
             self.vocab_size = len(self.word_to_id)
             self.save_mappings(self.mappings_dir, self.word_to_id, self.id_to_word)
-        else:
-            self.word_to_id, self.id_to_word = self.load_mappings(self.mappings_dir)
         
         self.vocab_size = len(self.word_to_id)
 
@@ -58,15 +58,15 @@ class ShakespearePlaysLoader:
     def build_char_vocab(self):
         print('Building character vocabulary...')
         # check if the mapping folder is empty, then save the mappings, else load the mappings
-        if not os.listdir('./data/mappings'):
+        if os.path.exists(self.mappings_dir + f'/{self.level}_to_id.json') and os.path.exists(self.mappings_dir + f'/id_to_{self.level}.json'):
+            self.char_to_id, self.id_to_char = self.load_mappings(self.mappings_dir)
+        else:
             unique_chars = sorted(set(self.plays_data))
             self.char_to_id = {char: idx for idx, char in enumerate(unique_chars)}
             self.id_to_char = {idx: char for idx, char in enumerate(unique_chars)}
             self.char_to_id['<UNK>'] = len(unique_chars)
             self.id_to_char[len(unique_chars)] = '<UNK>'
             self.save_mappings(self.mappings_dir, self.char_to_id, self.id_to_char)
-        else:
-            self.char_to_id, self.id_to_char = self.load_mappings(self.mappings_dir)
             
         self.vocab_size = len(self.char_to_id)
         return self.char_to_id, self.id_to_char
@@ -74,23 +74,22 @@ class ShakespearePlaysLoader:
     def build_bpe_vocab(self):
         print('Building BPE vocabulary...')
         # check if the mapping folder is empty, then save the mappings, else load the mappings
-        self.tokenizer = BPETokenizer(vocab_size=30000, min_frequency=2)
-        if not os.listdir('./data/mappings/bpe'):
-            # Add special tokens
-            plays_path = './data/ShakespearePlays/shakespeare.txt'
-            self.tokenizer.train(plays_path)
-            self.tokenizer.save('./data/mappings/bpe/bpe_tokenizer.json')
-            self.vocab_size = self.tokenizer.vocab_size
-        else:
-            self.tokenizer.load('./data/mappings/bpe/bpe_tokenizer.json')
-            self.vocab_size = self.tokenizer.vocab_size
-        
+        self.tokenizer = BPETokenizer()
+        # if os.path.exists(f'./data/mappings/{self.level}/bpe_tokenizer.json'):
+        #     self.tokenizer.load('./data/mappings/bpe/bpe_tokenizer.json')
+        #     self.vocab_size = self.tokenizer.vocab_size
+        # else:
+        #     # Add special tokens
+        plays_path = './data/ShakespearePlays/shakespeare.txt'
+        self.tokenizer.train(plays_path)
+        # self.tokenizer.save('./data/mappings/bpe/bpe_tokenizer.json')
+        self.vocab_size = self.tokenizer.vocab_size
+
         self.token_to_id = self.tokenizer.tokenizer.get_vocab()
         self.id_to_token = {v: k for k, v in self.token_to_id.items()}
 
         return self.token_to_id, self.id_to_token      
         
-
     def text_to_ids_word(self, plays, word_to_id):
         ids = [word_to_id.get(word, word_to_id['<UNK>']) for word in plays.split()]
         return ids
@@ -102,7 +101,6 @@ class ShakespearePlaysLoader:
     def text_to_ids_bpe(self, plays, tokenizer):
         ids = tokenizer.tokenizer.encode(plays).ids
         return ids
-
     
     def preprocess_word_level(self):
         print('Preprocessing data...')
@@ -114,8 +112,7 @@ class ShakespearePlaysLoader:
         for word, idx in word_to_id.items():
             if word in self.wv:
                 embedding_matrix[idx] = torch.tensor(self.wv[word])
-        
-        
+             
         return text_id, embedding_matrix, self.vocab_size
     
     def preprocess_char_level(self):
@@ -146,7 +143,6 @@ class ShakespearePlaysLoader:
                                 torch.tensor(target_sequences, dtype=torch.long))
         return dataset
 
-    
     @staticmethod
     def create_loaders(dataset, train_split, val_split, batch_size):
       train_size = int(train_split * len(dataset))
@@ -160,16 +156,19 @@ class ShakespearePlaysLoader:
     
     def save_mappings(self, save_dir, token_to_id, id_to_token):
         with open(os.path.join(save_dir, f'{self.level}_to_id.json'), 'w') as f:
-            json.dump(token_to_id, f)
+            json.dump(token_to_id, f) 
 
         with open(os.path.join(save_dir, f'id_to_{self.level}.json'), 'w') as f:
             json.dump(id_to_token, f)
     
     def load_mappings(self, load_dir):
         with open(os.path.join(load_dir, f'{self.level}_to_id.json'), 'r') as f:
-            token_to_id = json.load(f)
+            data = json.load(f)
+            token_to_id = {k: int(v) for k, v in data.items()}
 
         with open(os.path.join(load_dir, f'id_to_{self.level}.json'), 'r') as f:
-            id_to_token = json.load(f)
+            data = json.load(f)
+            id_to_token = {int(k): v for k, v in data.items()}
+
 
         return token_to_id, id_to_token

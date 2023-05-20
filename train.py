@@ -7,14 +7,17 @@ import torch.nn as nn
 from tqdm import tqdm
 from utils.augmenter import TextAugmenter
 from test import Evaluater
+import os
 
 
 def train(dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2, learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, use_augmentation=False):
     assert train_split + val_split <= 0.9, "train_split + val_split must be between 0.1 and 0.9"
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
     data_loader = ShakespearePlaysLoader(dataset_dir, level=level)
+    last_epoch = 0
     
+    print("loading data...")
     if level == 'word':
         word2vec_model = data_loader.wv
         embedding_size = data_loader.embedding_dim
@@ -28,6 +31,7 @@ def train(dataset_dir, level='char', model_name='RNN', batch_size=64, train_spli
         dataset = data_loader.create_dataset(text_bpe_ids[:dataset_length])
         token_to_id = data_loader.token_to_id
         id_to_token = data_loader.id_to_token
+        tokenizer = data_loader.tokenizer
     elif level == 'word':
         text_word_ids, embedding_matrix, vocab_size = data_loader.preprocess_word_level()
         dataset = data_loader.create_dataset(text_word_ids[:dataset_length])
@@ -46,10 +50,22 @@ def train(dataset_dir, level='char', model_name='RNN', batch_size=64, train_spli
     # Initialize the model
     model = None
     embedding_matrix = None
-    if model_name == 'RNN':
-        model = RNNModel(input_size, hidden_size, vocab_size, num_layers, embedding_size, embedding_matrix)
+    if os.path.exists(f'./saved/models/{model_name}_{level}_model.pt'):
+        print("loading model...")
+        checkpoint = torch.load(f'./saved/models/{model_name}_{level}_model.pt')
+        model = LSTMModel if model_name == 'LSTM' else RNNModel
+        model = model(input_size, hidden_size, vocab_size, num_layers, embedding_size, embedding_matrix)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        last_epoch = checkpoint['last_epoch']
+        loss = checkpoint['loss']
+        print("model loaded")
     else:
-        model = LSTMModel(input_size, hidden_size, vocab_size, num_layers, embedding_size, embedding_matrix)
+        if model_name == 'RNN':
+            model = RNNModel(input_size, hidden_size, vocab_size, num_layers, embedding_size, embedding_matrix)
+        else:
+            model = LSTMModel(input_size, hidden_size, vocab_size, num_layers, embedding_size, embedding_matrix)
 
     # Move the model to GPU if available
     model.to(device)
@@ -68,11 +84,23 @@ def train(dataset_dir, level='char', model_name='RNN', batch_size=64, train_spli
         trainer = ModelTrainer(model, train_loader, criterion, optimizer, device, number_states=1)
 
     # Training loop
-    for epoch in range(num_epochs):
+
+    SAVE_AFTER_EPOCHS = 1
+    SAVE_PATH = f'./saved/models/{model_name}_{level}_model.pt'
+    for epoch in range(last_epoch, num_epochs):
         print("starting epoch", epoch+1)
         loss = trainer.train()
         validation_loss = trainer.evaluate(val_loader)
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss:.4f}, Validation Loss: {validation_loss:.4f}")
+        if epoch % SAVE_AFTER_EPOCHS == 0:
+            torch.save({
+                'last_epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                }, SAVE_PATH)
+            
+            print("model saved")
 
 
     ## Test the model
@@ -84,7 +112,7 @@ def train(dataset_dir, level='char', model_name='RNN', batch_size=64, train_spli
     else:
         evaluater = Evaluater(model, device, number_states=1)
 
-    return evaluater, token_to_id, id_to_token, test_loader, criterion, device
+    return evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer if level == 'bpe' else None
 
 if __name__ == '__main__':
     # Hyperparameters
@@ -97,27 +125,27 @@ if __name__ == '__main__':
     val_split = 0.1
     num_epochs = 3
     learning_rate = 0.001
-    dataset_length = -1
+    dataset_length = 1000
     dataset_dir = './data/ShakespearePlays/'
     level = 'bpe'
     model_name = 'RNN'
 
-    evaluater, word_to_id, id_to_word, test_loader, criterion, device = train(dataset_dir, level=level, 
-                                                                            model_name=model_name,
-                                                                            batch_size=batch_size, num_epochs=num_epochs,
-                                                                            train_split=0.8, val_split=0.1, 
-                                                                            learning_rate=learning_rate, 
-                                                                            hidden_size=hidden_size, 
-                                                                            embedding_size=embedding_size, 
-                                                                            num_layers=num_layers, input_size=input_size, 
-                                                                            dataset_length=dataset_length, 
-                                                                            use_augmentation=False)
+    evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(dataset_dir, level=level, 
+                                                                                        model_name=model_name,
+                                                                                        batch_size=batch_size, num_epochs=num_epochs,
+                                                                                        train_split=0.8, val_split=0.1, 
+                                                                                        learning_rate=learning_rate, 
+                                                                                        hidden_size=hidden_size, 
+                                                                                        embedding_size=embedding_size, 
+                                                                                        num_layers=num_layers, input_size=input_size, 
+                                                                                        dataset_length=dataset_length, 
+                                                                                        use_augmentation=False)
     
     perplexity = evaluater.calculate_perplexity(test_loader, criterion)
     print('Perplexity:', perplexity)
 
     seed_text = "Start a discussion about coffee"
-    gen_length = 2000
+    gen_length = 200
 
-    generated_text = evaluater.generate_text(seed_text, gen_length, word_to_id, id_to_word, level, device, temperature=1, top_p=0)
+    generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0, tokenizer=tokenizer)
     print(generated_text)

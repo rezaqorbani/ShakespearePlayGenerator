@@ -171,3 +171,5 @@ saved/model/rnn_model
 data/embeddings/word2vec.wordvectors
 
 data/
+train.py
+saved/*
