@@ -5,6 +5,11 @@ from torch.utils.data import TensorDataset, DataLoader, random_split
 from gensim.models import Word2Vec, KeyedVectors
 import gensim.downloader as api
 from tqdm import tqdm
+import re
+import nltk
+nltk.download('punkt')
+from nltk.tokenize import word_tokenize
+
 
 class ShakespearePlaysLoader:
     def __init__(self, dataset_dir, level='word'):
@@ -19,14 +24,20 @@ class ShakespearePlaysLoader:
         self.vocab_size = None
         self.mappings_dir = dataset_dir+'/mappings'
         self.plays_data= self.read_Plays()
+        self.tokenized_plays = self.tokenize(self.plays_data)
 
     def read_Plays(self):
         print('Reading Shakespeare Plays...')
         with open(self.dataset_dir+"/Plays/shakespeare.txt", 'r') as f:
-            plays_data = f.read()  
-               
+            plays_data = f.read()      
         return plays_data
-    
+
+    def tokenize(self, text):
+        text = text.replace("\n", " NewLine ")
+        text = word_tokenize(text)
+        text = [token.replace("NewLine", "\n") for token in text]
+        return text
+
     def build_word_vocab(self):
         print('Building word vocabulary...')
         # check if the mapping folder is empty, then save the mappings, else load the mappings
@@ -36,7 +47,7 @@ class ShakespearePlaysLoader:
             self.id_to_word = {0: '<PAD>', 1: '<UNK>'}
 
             # Add words from word2vec model
-            for word in tqdm(self.plays_data.split()):
+            for word in tqdm(self.tokenized_plays):
             #for word in self.wv.key_to_index:
                 if word not in self.word_to_id:
                     idx = len(self.word_to_id)
@@ -71,7 +82,7 @@ class ShakespearePlaysLoader:
         
 
     def text_to_ids_word(self, plays, word_to_id):
-        ids = [word_to_id.get(word, word_to_id['<UNK>']) for word in plays.split()]
+        ids = [word_to_id.get(word, word_to_id['<UNK>']) for word in plays]
         return ids
     
     def text_to_ids_char(self, plays, char_to_id):
@@ -83,7 +94,7 @@ class ShakespearePlaysLoader:
     def preprocess_word_level(self):
         print('Preprocessing data...')
         word_to_id, id_to_word = self.build_word_vocab()
-        text_id = self.text_to_ids_word(self.plays_data, word_to_id)
+        text_id = self.text_to_ids_word(self.tokenized_plays, word_to_id)
 
         # Create embedding matrix
         embedding_matrix = torch.zeros((len(word_to_id), self.embedding_dim))
@@ -116,6 +127,12 @@ class ShakespearePlaysLoader:
                                 torch.tensor(target_sequences, dtype=torch.long))
         return dataset
 
+
+    def extract_passages(self):
+        text = self.plays_data.split('\n\n')
+        passages = [re.sub(r'^.*?:', '', line).strip() for line in text if re.sub(r'^.*?:', '', line).strip() != '']
+        characters = [re.findall(r'^.*?:', line)[0] for line in text if re.sub(r'^.*?:', '', line).strip() != '']
+        return passages, characters
 
     
     @staticmethod

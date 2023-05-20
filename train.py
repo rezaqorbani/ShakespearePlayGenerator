@@ -96,8 +96,8 @@ if __name__ == '__main__':
     num_epochs = 3
     learning_rate = 0.001
     dataset_length = -1
-    dataset_dir = './data/CornellMovie'
-    loader = CornellMovieLoader
+    dataset_dir = './data/ShakespearePlays'
+    loader = ShakespearePlaysLoader
     level = 'word'
     model_name = 'RNN'
 
