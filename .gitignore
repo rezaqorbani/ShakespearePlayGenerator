@@ -172,4 +172,6 @@ data/embeddings/
 
 data/
 train.py
-saved/*
+
+saved/models/*
+!saved/models/.gitkeep
