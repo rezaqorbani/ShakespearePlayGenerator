@@ -170,3 +170,6 @@ saved/model/rnn_model
 # embeddings
 data/embeddings/
 
+data/
+train.py
+saved/*
