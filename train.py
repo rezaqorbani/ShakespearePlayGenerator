@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader, random_split
-from data_loader.data_loaders import ShakespearePlaysLoader
+from data_loader.ShakespearePlaysLoader import ShakespearePlaysLoader
+from data_loader.CornellMovieLoader import CornellMovieLoader
 from models.models import LSTMModel, RNNModel
 from trainers.trainer import ModelTrainer
 import torch.nn as nn
@@ -10,12 +11,14 @@ from test import Evaluater
 import os
 
 
-def train(dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2, learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, use_augmentation=False):
+
+
+def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2, learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, use_bpe=False, use_augmentation=False):
     assert train_split + val_split <= 0.9, "train_split + val_split must be between 0.1 and 0.9"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    data_loader = ShakespearePlaysLoader(dataset_dir, level=level)
-    last_epoch = 0
+    
+    data_loader = loader(dataset_dir, level=level)
     
     print("loading data...")
     if level == 'word':
@@ -125,27 +128,28 @@ if __name__ == '__main__':
     val_split = 0.1
     num_epochs = 3
     learning_rate = 0.001
-    dataset_length = 1000
-    dataset_dir = './data/ShakespearePlays/'
-    level = 'bpe'
+    dataset_length = -1
+    dataset_dir = './data/ShakespearePlays'
+    loader = ShakespearePlaysLoader
+    level = 'word'
     model_name = 'RNN'
 
-    evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(dataset_dir, level=level, 
-                                                                                        model_name=model_name,
-                                                                                        batch_size=batch_size, num_epochs=num_epochs,
-                                                                                        train_split=0.8, val_split=0.1, 
-                                                                                        learning_rate=learning_rate, 
-                                                                                        hidden_size=hidden_size, 
-                                                                                        embedding_size=embedding_size, 
-                                                                                        num_layers=num_layers, input_size=input_size, 
-                                                                                        dataset_length=dataset_length, 
-                                                                                        use_augmentation=False)
+    evaluater, token_to_id, id_to_token, test_loader, criterion, device = train(loader, dataset_dir, level=level, 
+                                                                            model_name=model_name,
+                                                                            batch_size=batch_size, num_epochs=num_epochs,
+                                                                            train_split=0.8, val_split=0.1, 
+                                                                            learning_rate=learning_rate, 
+                                                                            hidden_size=hidden_size, 
+                                                                            embedding_size=embedding_size, 
+                                                                            num_layers=num_layers, input_size=input_size, 
+                                                                            dataset_length=dataset_length, use_bpe=False, 
+                                                                            use_augmentation=False)
     
     perplexity = evaluater.calculate_perplexity(test_loader, criterion)
     print('Perplexity:', perplexity)
 
     seed_text = "Start a discussion about coffee"
-    gen_length = 200
+    gen_length = 2000
 
-    generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0, tokenizer=tokenizer)
+    generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0)
     print(generated_text)
