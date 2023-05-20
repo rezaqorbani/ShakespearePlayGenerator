@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader, random_split
+from torch.optim.lr_scheduler import StepLR
 from data_loader.ShakespearePlaysLoader import ShakespearePlaysLoader
 from data_loader.CornellMovieLoader import CornellMovieLoader
 from models.models import LSTMModel, RNNModel
@@ -13,13 +14,15 @@ import os
 
 
 
-def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2, learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, use_bpe=False, use_augmentation=False):
+def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2,
+           learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, 
+           use_bpe=False, use_augmentation=False, early_stopping_patience=0, gamma=0.9, step_size=1, use_scheduler=False):
     assert train_split + val_split <= 0.9, "train_split + val_split must be between 0.1 and 0.9"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_loader = loader(dataset_dir, level=level)
     last_epoch = 0
-    
+    print("training started...")
     print("loading data...")
     if level == 'word':
         word2vec_model = data_loader.wv
@@ -80,6 +83,7 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
         criterion = nn.CrossEntropyLoss()  # Ignore padding tokens
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    schedular = StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     if model_name == 'LSTM':
         trainer = ModelTrainer(model, train_loader, criterion, optimizer, device, number_states=2)
@@ -87,9 +91,13 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
         trainer = ModelTrainer(model, train_loader, criterion, optimizer, device, number_states=1)
 
     # Training loop
-
-    SAVE_AFTER_EPOCHS = 1
+    SAVE_AFTER_EPOCHS = 3
     SAVE_PATH = f'./saved/models/{model_name}_{level}_{batch_size}_{learning_rate}_{hidden_size}_{embedding_size}_{num_layers}_model.pt'
+
+    if early_stopping_patience > 0:
+        early_stopping_counter = 0
+        best_loss = float('inf')
+
     for epoch in range(last_epoch, num_epochs):
         print("starting epoch", epoch+1)
         loss = trainer.train()
@@ -104,6 +112,21 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
                 }, SAVE_PATH)
             
             print("model saved")
+
+        if early_stopping_patience > 0:
+            if validation_loss < best_loss:
+                best_loss = validation_loss
+                early_stopping_counter = 0
+            else:
+                early_stopping_counter += 1
+                if early_stopping_counter == early_stopping_patience:
+                    print("early stopping")
+                    break
+        if use_scheduler:
+            schedular.step()
+            
+
+    print("training finished")
 
 
     ## Test the model
@@ -126,13 +149,17 @@ if __name__ == '__main__':
     batch_size = 50
     train_split = 0.8
     val_split = 0.1
-    num_epochs = 3
+    num_epochs = 1000
     learning_rate = 0.001
     dataset_length = 100
     dataset_dir = './data/ShakespearePlays'
     loader = ShakespearePlaysLoader
-    level = 'bpe'
+    level = 'word'
     model_name = 'LSTM'
+    early_stopping_patience = 3 # set zero to disable early stopping
+    step_size = 1
+    gamma = 0.9
+    use_scheduler = False
 
     evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(loader, dataset_dir, level=level, 
                                                                             model_name=model_name,
@@ -143,13 +170,16 @@ if __name__ == '__main__':
                                                                             embedding_size=embedding_size, 
                                                                             num_layers=num_layers, input_size=input_size, 
                                                                             dataset_length=dataset_length, use_bpe=False, 
-                                                                            use_augmentation=False)
+                                                                            use_augmentation=True, 
+                                                                            early_stopping_patience=early_stopping_patience, 
+                                                                            step_size=step_size, gamma=gamma,
+                                                                            use_scheduler=use_scheduler)
     
     perplexity = evaluater.calculate_perplexity(test_loader, criterion)
     print('Perplexity:', perplexity)
 
-    seed_text = "Start a discussion about coffee"
-    gen_length = 2000
+    seed_text = "You shall not "
+    gen_length = 200
 
     generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0, tokenizer=tokenizer)
     print(generated_text)
