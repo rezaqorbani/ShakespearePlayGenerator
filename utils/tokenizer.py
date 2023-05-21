@@ -1,10 +1,11 @@
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
-from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.pre_tokenizers import UnicodeScripts as Pre_tokenizer
 from tokenizers.trainers import BpeTrainer
 from tokenizers.decoders import BPEDecoder
 from tokenizers import normalizers
 from tokenizers.normalizers import Lowercase, NFD, StripAccents
+# from tokenizers.processors import ByteLevel as Post_processor
 
 
 class BPETokenizer:
@@ -12,9 +13,10 @@ class BPETokenizer:
         self.vocab_size = vocab_size
         self.min_frequency = min_frequency
         self.tokenizer = Tokenizer(BPE(unk_token="<UNK>"))
-        self.tokenizer.pre_tokenizer = Whitespace()
-        self.tokenizer.decoder = BPEDecoder()
+        self.tokenizer.pre_tokenizer = Pre_tokenizer()
+        # self.tokenizer.decoder = BPEDecoder()
         # self.tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        # self.tokenizer.post_processor = Post_processor(trim_offsets=True)
         
     def train(self, file_name):
         print("Training tokenizer ...")
@@ -22,23 +24,6 @@ class BPETokenizer:
         self.tokenizer.train([file_name], trainer)
         print("Tokenizer trained.")
         
-
-    def save(self, path):
-        print("Saving tokenizer ...")
-        self.tokenizer.save(path)
-        print("Tokenizer saved.")
-
-    def load(self, path):
-        print("Loading tokenizer ...")
-        self.tokenizer = Tokenizer.from_file(path)
-        print("Tokenizer loaded.")
-
-    def use_pretrained(self, pretrained_name):
-        print("Changing to pretrained tokenizer ...")
-        self.tokenizer = Tokenizer.from_pretrained(pretrained_name)
-
-    def pretokenize(self, text):
-        return self.tokenizer.pre_tokenizer.pre_tokenize(text)
 
 
 
