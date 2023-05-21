@@ -13,14 +13,15 @@ from nltk.tokenize import word_tokenize
 
 
 class ShakespearePlaysLoader:
-    def __init__(self, dataset_dir, level='word'):
+    def __init__(self, dataset_dir, level='word', train_w2v=False):
         self.dataset_dir = dataset_dir
         if level == 'word':
-          self.word2vec_path = './data/embeddings/word2vec_embeddings.txt'
-          self.wv = KeyedVectors.load_word2vec_format(self.word2vec_path, binary=False)
+          if train_w2v == False:
+            self.word2vec_path = './data/embeddings/word2vec_embeddings.txt'
+            self.wv = KeyedVectors.load_word2vec_format(self.word2vec_path, binary=False)
           # self.wv = api.load('word2vec-google-news-300')
           # self.wv = KeyedVectors.load_word2vec_format('
-          self.embedding_dim = self.wv.vector_size
+            self.embedding_dim = self.wv.vector_size
         self.level = level
         self.vocab_size = None
         self.mappings_dir = dataset_dir+'/mappings'

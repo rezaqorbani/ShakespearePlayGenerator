@@ -42,6 +42,7 @@ class Word2VecTrainer:
         model.save(path)
 
 if __name__ == '__main__':
+    print('Training Word2Vec...')
     dataset= './data/Cornell_Movie-Dialog_Corpus/movie_lines.txt'
     word2vec_pretrained_name = 'word2vec-google-news-300'
     word2vec_path = './data/embeddings/word2vec.wordvectors'
@@ -52,3 +53,4 @@ if __name__ == '__main__':
     # dialogue_lines = trainer.read_dialogue_lines()
     # model = trainer.train_word2vec(dialogue_lines)
     # trainer.save_word2vec(model, word2vec_path)
+    print('Done!')
