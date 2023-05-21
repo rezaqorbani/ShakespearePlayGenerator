@@ -145,13 +145,13 @@ if __name__ == '__main__':
     input_size = 100
     hidden_size = 256
     embedding_size = 100
-    num_layers = 1
+    num_layers = 2
     batch_size = 50
     train_split = 0.8
     val_split = 0.1
-    num_epochs = 3
+    num_epochs = 4
     learning_rate = 0.001
-    dataset_length = 10000
+    dataset_length = 1000
     dataset_dir = './data/ShakespearePlays'
     loader = ShakespearePlaysLoader
     level = 'bpe'
@@ -178,8 +178,8 @@ if __name__ == '__main__':
     perplexity = evaluater.calculate_perplexity(test_loader, criterion)
     print('Perplexity:', perplexity)
 
-    seed_text = "You shall not "
-    gen_length = 200
+    seed_text = "what do you  "
+    gen_length = 100
 
     generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0, tokenizer=tokenizer)
     print(generated_text)

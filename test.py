@@ -59,8 +59,9 @@ class Evaluater:
 
         # Generate text
         generated_text = seed_text
-        
-        for _ in range(gen_length):
+
+        for _ in range(gen_length):#
+
             with torch.no_grad():
                 outputs, hidden = self.model(input_seq, hidden)
 
@@ -69,16 +70,17 @@ class Evaluater:
                 outputs = nucleus_sampling(outputs, top_p=top_p)
 
                 probs = F.softmax(outputs, dim=0)
-
                 # Sample a word from the output probability distribution if the word is not <UNK> otherwise sample again
                 idx = torch.multinomial(probs, 1).item()
                 # while id_to_[str(idx)] == '<UNK>':
                 # while (idx not in id_to_token) or (id_to_token[str(idx)] == '<UNK>'):
                 #     idx = torch.multinomial(probs, 1).item()
                 #     print(idx)
-                while idx not in id_to_token or id_to_token[idx] == '<UNK>':
+                
+                
+                while idx not in id_to_token or id_to_token[idx] == '<UNK>' :
                   idx = torch.multinomial(probs, 1).item()
-
+                  
                 # Append the generated word to the generated text
                 # generated_ = id_to_[str(idx)]
                 generated_ = id_to_token[idx]
