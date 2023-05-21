@@ -16,8 +16,8 @@ class ShakespearePlaysLoader:
     def __init__(self, dataset_dir, level='word'):
         self.dataset_dir = dataset_dir
         if level == 'word':
-          self.word2vec_path = './data/embeddings/word2vec.wordvectors'
-          self.wv = KeyedVectors.load(self.word2vec_path, mmap='r')
+          self.word2vec_path = './data/embeddings/word2vec_embeddings.txt'
+          self.wv = KeyedVectors.load_word2vec_format(self.word2vec_path, binary=False)
           # self.wv = api.load('word2vec-google-news-300')
           # self.wv = KeyedVectors.load_word2vec_format('
           self.embedding_dim = self.wv.vector_size
@@ -26,6 +26,7 @@ class ShakespearePlaysLoader:
         self.mappings_dir = dataset_dir+'/mappings'
         self.plays_data= self.read_Plays()
         self.tokenized_plays = self.tokenize(self.plays_data)
+        
 
     def read_Plays(self):
         print('Reading Shakespeare Plays...')
@@ -115,9 +116,10 @@ class ShakespearePlaysLoader:
         # Create embedding matrix
         embedding_matrix = torch.zeros((len(word_to_id), self.embedding_dim))
         for word, idx in word_to_id.items():
+            if word=="\n":
+                embedding_matrix[idx] = torch.tensor(self.wv[r"\n"])
             if word in self.wv:
                 embedding_matrix[idx] = torch.tensor(self.wv[word])
-             
         return text_id, embedding_matrix, self.vocab_size
     
     def preprocess_char_level(self):
