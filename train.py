@@ -11,12 +11,9 @@ from utils.augmenter import TextAugmenter
 from test import Evaluater
 import os
 
-
-
-
 def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2,
            learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, 
-           use_bpe=False, use_augmentation=False, early_stopping_patience=0, gamma=0.9, step_size=1, use_scheduler=False):
+            use_augmentation=False, early_stopping_patience=0, gamma=0.9, step_size=1, use_scheduler=False):
     assert train_split + val_split <= 0.9, "train_split + val_split must be between 0.1 and 0.9"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -164,12 +161,12 @@ if __name__ == '__main__':
     evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(loader, dataset_dir, level=level, 
                                                                             model_name=model_name,
                                                                             batch_size=batch_size, num_epochs=num_epochs,
-                                                                            train_split=0.8, val_split=0.1, 
+                                                                            train_split=train_split, val_split=val_split, 
                                                                             learning_rate=learning_rate, 
                                                                             hidden_size=hidden_size, 
                                                                             embedding_size=embedding_size, 
                                                                             num_layers=num_layers, input_size=input_size, 
-                                                                            dataset_length=dataset_length, use_bpe=False, 
+                                                                            dataset_length=dataset_length, 
                                                                             use_augmentation=True, 
                                                                             early_stopping_patience=early_stopping_patience, 
                                                                             step_size=step_size, gamma=gamma,

@@ -15,9 +15,9 @@ class Word2VecModel:
         self.model=None
 
 
-        self.plays_tokenized = self.loader(self.dataset_dir, 'word').tokenized_plays
+        # self.plays_tokenized = self.loader(self.dataset_dir, 'word', train_w2v=True).tokenized_plays
 
-        self.plays=self.loader(self.dataset_dir, 'word').plays_data.replace('\n\n', ' NewLine ')
+        self.plays=self.loader(self.dataset_dir, 'word', train_w2v = True).plays_data.replace('\n\n', ' NewLine ')
         
         # Sentence splitting
         self.sentences = sent_tokenize(self.plays)
@@ -59,9 +59,11 @@ class Word2VecModel:
                 f.write(word + ' ' + ' '.join(map(str, vector)) + '\n')
 
 if __name__ == '__main__':
+    print('Training word2vec model...')
     dataset_dir = './data/ShakespearePlays'
     loader = ShakespearePlaysLoader.ShakespearePlaysLoader
     word2vecModel=Word2VecModel(dataset_dir, loader, embedding_size=300)
+
     # Train word2vec on our corpus
     word2vecModel.train_word2vec()
     word2vecModel.save_model('./saved/models/pretrained_w2v.model')
@@ -69,4 +71,5 @@ if __name__ == '__main__':
     
     embeddings=word2vecModel.load_embeddings('./data/embeddings/word2vec_vectors.txt')
     word2vecModel.save_embeddingswith_NL('./data/embeddings/word2vec_embeddings.txt', embeddings)
+    print('Done!')
     
