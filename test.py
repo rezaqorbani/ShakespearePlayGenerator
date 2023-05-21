@@ -58,7 +58,6 @@ class Evaluater:
 
         # Generate text
         generated_text = seed_text
-        counter=0
 
         for _ in range(gen_length):#
 
