@@ -1,11 +1,11 @@
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
-from tokenizers.pre_tokenizers import UnicodeScripts as Pre_tokenizer
+from tokenizers.pre_tokenizers import Whitespace as Pre_tokenizer
 from tokenizers.trainers import BpeTrainer
 from tokenizers.decoders import BPEDecoder
 from tokenizers import normalizers
 from tokenizers.normalizers import Lowercase, NFD, StripAccents
-# from tokenizers.processors import ByteLevel as Post_processor
+from tokenizers.processors import ByteLevel as Post_processor
 
 
 class BPETokenizer:
@@ -23,8 +23,6 @@ class BPETokenizer:
         trainer = BpeTrainer(vocab_size=self.vocab_size, min_frequency=self.min_frequency, special_tokens=["<PAD>", "<UNK>"])
         self.tokenizer.train([file_name], trainer)
         print("Tokenizer trained.")
-        
-
 
 
 
