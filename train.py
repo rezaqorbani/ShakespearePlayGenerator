@@ -159,7 +159,7 @@ if __name__ == '__main__':
     hidden_size = 256
     embedding_size = 100
     num_layers = 2
-    batch_size = 100
+    batch_size = 101
     train_split = 0.8
     val_split = 0.1
     num_epochs = 30
