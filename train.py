@@ -19,7 +19,7 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
     assert train_split + val_split <= 0.9, "train_split + val_split must be between 0.1 and 0.9"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    data_loader = loader(dataset_dir, level=level)
+    data_loader = loader(dataset_dir, level=level, augment=use_augmentation)
     last_epoch = 0
     print("training started...")
     print("loading data...")
@@ -173,6 +173,7 @@ if __name__ == '__main__':
     step_size = 1
     gamma = 0.9
     use_scheduler = False
+    use_augmentation = False
 
     train_losses, val_losses, test_loss, evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(loader, dataset_dir, level=level, 
                                                                             model_name=model_name,
@@ -183,7 +184,7 @@ if __name__ == '__main__':
                                                                             embedding_size=embedding_size, 
                                                                             num_layers=num_layers, input_size=input_size, 
                                                                             dataset_length=dataset_length, 
-                                                                            use_augmentation=False, 
+                                                                            use_augmentation=use_augmentation, 
                                                                             early_stopping_patience=early_stopping_patience, 
                                                                             step_size=step_size, gamma=gamma,
                                                                             use_scheduler=use_scheduler)

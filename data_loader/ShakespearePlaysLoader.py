@@ -12,7 +12,7 @@ from nltk.tokenize import word_tokenize
 
 
 class ShakespearePlaysLoader:
-    def __init__(self, dataset_dir, level='word', train_w2v=False):
+    def __init__(self, dataset_dir, level='word', train_w2v=False, augment=False):
         self.dataset_dir = dataset_dir
         if level == 'word':
           if train_w2v == False:
@@ -22,6 +22,7 @@ class ShakespearePlaysLoader:
           # self.wv = KeyedVectors.load_word2vec_format('
             self.embedding_dim = self.wv.vector_size
         self.level = level
+        self.augment = augment
         self.vocab_size = None
         self.mappings_dir = dataset_dir+'/mappings'
         self.plays_data= self.read_Plays()
@@ -30,12 +31,18 @@ class ShakespearePlaysLoader:
 
     def read_Plays(self):
         print('Reading Shakespeare Plays...')
-        with open(self.dataset_dir+"/Plays/shakespeare.txt", 'r') as f:
+        with open(self.dataset_dir+"/augmentation/augmented_text.txt", 'r') as f:
             plays_data = f.read()      
+            
+        if self.augment:
+            with open(self.dataset_dir+"/Plays/shakespeare.txt", 'r') as file:
+                augmented_plays = file.read()  
+                plays_data = augmented_plays[:500000]+plays_data
+            
         return plays_data
 
     def tokenize(self, text):
-        text = text.replace("\n", " NewLine ")
+        text = text.replace(".\n\n", " NewLine ")
         text = word_tokenize(text)
         text = [token.replace("NewLine", "\n") for token in text]
         return text
