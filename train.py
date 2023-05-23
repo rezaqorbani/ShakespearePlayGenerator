@@ -10,6 +10,8 @@ from tqdm import tqdm
 from utils.augmenter import TextAugmenter
 from test import Evaluater
 import os
+import json
+import matplotlib.pyplot as plt
 
 def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, train_split=0.8, val_split=0.1, num_epochs=2,
            learning_rate=0.001, hidden_size=256, embedding_size=100, num_layers=1, input_size=100, dataset_length=1000, 
@@ -88,24 +90,28 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
         trainer = ModelTrainer(model, train_loader, criterion, optimizer, device, number_states=1)
 
     # Training loop
-    SAVE_AFTER_EPOCHS = 3
+    SAVE_AFTER_EPOCHS = 2
     SAVE_PATH = f'./saved/models/{model_name}_{level}_{batch_size}_{learning_rate}_{hidden_size}_{embedding_size}_{num_layers}_model.pt'
 
     if early_stopping_patience > 0:
         early_stopping_counter = 0
         best_loss = float('inf')
 
+    val_losses = []
+    train_losses = []
     for epoch in range(last_epoch, num_epochs):
         print("starting epoch", epoch+1)
-        loss = trainer.train()
+        train_loss = trainer.train()
+        train_losses.append(train_loss)
         validation_loss = trainer.evaluate(val_loader)
-        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss:.4f}, Validation Loss: {validation_loss:.4f}")
-        if epoch % SAVE_AFTER_EPOCHS == 0:
+        val_losses.append(validation_loss)
+        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {train_loss:.4f}, Validation Loss: {validation_loss:.4f}")
+        if epoch % SAVE_AFTER_EPOCHS == 0 and epoch != 0:
             torch.save({
                 'last_epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'loss': loss,
+                'loss': train_loss,
                 }, SAVE_PATH)
             
             print("model saved")
@@ -118,7 +124,17 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
                 early_stopping_counter += 1
                 if early_stopping_counter == early_stopping_patience:
                     print("early stopping")
-                    break
+
+                    test_loss = trainer.evaluate(test_loader)
+                    print("test loss:", test_loss)
+
+                    if model_name == 'LSTM':
+                        evaluater = Evaluater(model, device, number_states=2)
+                    else:
+                        evaluater = Evaluater(model, device, number_states=1)
+
+                    return train_losses, val_losses, test_loss, evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer if level == 'bpe' else None
+
         if use_scheduler:
             schedular.step()
             
@@ -135,7 +151,7 @@ def train(loader, dataset_dir, level='char', model_name='RNN', batch_size=64, tr
     else:
         evaluater = Evaluater(model, device, number_states=1)
 
-    return evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer if level == 'bpe' else None
+    return train_losses, val_losses, test_loss, evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer if level == 'bpe' else None
 
 if __name__ == '__main__':
     # Hyperparameters
@@ -143,12 +159,12 @@ if __name__ == '__main__':
     hidden_size = 256
     embedding_size = 100
     num_layers = 2
-    batch_size = 50
+    batch_size = 101
     train_split = 0.8
     val_split = 0.1
-    num_epochs = 4
+    num_epochs = 30
     learning_rate = 0.001
-    dataset_length = 1000
+    dataset_length = -1
     dataset_dir = './data/ShakespearePlays'
     loader = ShakespearePlaysLoader
     level = 'bpe'
@@ -158,7 +174,7 @@ if __name__ == '__main__':
     gamma = 0.9
     use_scheduler = False
 
-    evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(loader, dataset_dir, level=level, 
+    train_losses, val_losses, test_loss, evaluater, token_to_id, id_to_token, test_loader, criterion, device, tokenizer = train(loader, dataset_dir, level=level, 
                                                                             model_name=model_name,
                                                                             batch_size=batch_size, num_epochs=num_epochs,
                                                                             train_split=train_split, val_split=val_split, 
@@ -166,7 +182,7 @@ if __name__ == '__main__':
                                                                             hidden_size=hidden_size, 
                                                                             embedding_size=embedding_size, 
                                                                             num_layers=num_layers, input_size=input_size, 
-                                                                            dataset_length=dataset_length, use_bpe=False, 
+                                                                            dataset_length=dataset_length, 
                                                                             use_augmentation=False, 
                                                                             early_stopping_patience=early_stopping_patience, 
                                                                             step_size=step_size, gamma=gamma,
@@ -175,8 +191,26 @@ if __name__ == '__main__':
     perplexity = evaluater.calculate_perplexity(test_loader, criterion)
     print('Perplexity:', perplexity)
 
-    seed_text = "what do you  "
-    gen_length = 100
+    seed_text = "ROMEO:"
+    gen_length = 300
 
-    generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=1, top_p=0, tokenizer=tokenizer)
+    generated_text = evaluater.generate_text(seed_text, gen_length, token_to_id, id_to_token, level, device, temperature=0.9, top_p=0.9, tokenizer=tokenizer)
     print(generated_text)
+
+    # save the plot of the validation losses and train losses in the results/plots folder. The plot should have a legend (train, validation) and a title (Model, tokenization level), shift the epochs by 1
+    plt.plot(train_losses, label='train')
+    plt.plot(val_losses, label='validation')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.title(f'{model_name}, {level}')
+    plt.savefig(f'./results/plots/{model_name}_{level}_{batch_size}_{learning_rate}_{hidden_size}_{embedding_size}_{num_layers}_plot.png')
+    plt.close()
+
+    # append the perplexity, test_loss and generated text in a text file in the results/generation folder, create the file if it doesn't exist
+    with open(f'./results/generation/{model_name}_{level}_{batch_size}_{learning_rate}_{hidden_size}_{embedding_size}_{num_layers}_generation.txt', 'a+') as f:
+        f.write(f'Perplexity: {perplexity}\n')
+        f.write(f'Test Loss: {test_loss}\n')
+        f.write(f'Generated Text:\n{generated_text}\n')
+        f.write('----------------------------------------\n\n')
+

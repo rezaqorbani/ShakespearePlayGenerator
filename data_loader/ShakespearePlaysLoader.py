@@ -8,7 +8,6 @@ from tqdm import tqdm
 from utils.tokenizer import BPETokenizer
 import re
 import nltk
-nltk.download('punkt')
 from nltk.tokenize import word_tokenize
 
 
@@ -86,7 +85,7 @@ class ShakespearePlaysLoader:
     def build_bpe_vocab(self):
         print('Building BPE vocabulary...')
         # check if the mapping folder is empty, then save the mappings, else load the mappings
-        self.tokenizer = BPETokenizer(vocab_size=100000, min_frequency=2)
+        self.tokenizer = BPETokenizer(vocab_size=30000, min_frequency=2)
 
         plays_path = self.dataset_dir+"/Plays/shakespeare.txt"
         self.tokenizer.train(plays_path)
