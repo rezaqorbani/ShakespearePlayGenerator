@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader, random_split
 from torch.optim.lr_scheduler import StepLR
 from data_loader.ShakespearePlaysLoader import ShakespearePlaysLoader
-from data_loader.CornellMovieLoader import CornellMovieLoader
 from models.models import LSTMModel, RNNModel
 from trainers.trainer import ModelTrainer
 import torch.nn as nn
