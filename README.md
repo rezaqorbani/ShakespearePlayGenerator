@@ -18,4 +18,4 @@ intriguing differences in the capabilities of each model, with LSTM demonstratin
 performance in certain scenarios. While data augmentation does not significantly enhance
 model performance, it has potential in aiding model generalization. The detailed analysis of
 these findings and the resultant models’ text-generation abilities will be elaborated upon in
-the main body of this report
+the main body of this report.
